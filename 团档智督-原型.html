@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>团档智督 — 基层团组织台账智能督办与材料归档平台</title>
+<script src="https://cdn.bootcdn.net/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+:root{
+  --blue:#2b6de8; --blue-d:#1e56c0; --green:#22b07d; --orange:#f0a020;
+  --red:#e05656; --gray:#909399; --bg:#f2f5fa; --line:#e6ebf2;
+  --t1:#243041; --t2:#5b6a80; --t3:#98a4b5;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[v-cloak]{display:none}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--t1);font-size:14px}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
+/* ---------- 登录页 ---------- */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1c3f94 0%,#2b6de8 55%,#4a90f0 100%);padding:30px}
+.login-card{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(10,30,80,.35);
+  width:860px;max-width:96vw;padding:40px 48px}
+.logo{display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:6px}
+.logo .mark{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#e33,#f60);
+  color:#fff;font-size:26px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.logo h1{font-size:26px;letter-spacing:2px}
+.login-sub{text-align:center;color:var(--t2);margin-bottom:26px;font-size:13px;letter-spacing:1px}
+.acc-group{margin-bottom:18px}
+.acc-group h3{font-size:13px;color:var(--t3);font-weight:600;margin-bottom:8px;letter-spacing:1px}
+.acc-grid{display:flex;flex-wrap:wrap;gap:10px}
+.acc{border:1px solid var(--line);border-radius:9px;padding:10px 16px;background:#fafbfd;
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:170px;transition:.15s}
+.acc:hover{border-color:var(--blue);background:#f0f6ff;transform:translateY(-2px)}
+.acc b{font-size:15px}
+.acc span{font-size:12px;color:var(--t2)}
+.acc.admin{border-left:4px solid var(--red)}
+.acc.clerk{border-left:4px solid var(--orange)}
+.acc.branch{border-left:4px solid var(--blue)}
+.login-foot{text-align:center;color:var(--t3);font-size:12px;margin-top:22px}
+.login-foot a{color:var(--blue);cursor:pointer;margin-left:8px}
+/* ---------- 布局 ---------- */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:216px;background:#1c2b45;color:#c7d2e4;
+  display:flex;flex-direction:column;z-index:10}
+.side-logo{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.side-logo .mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#e33,#f60);
+  color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:18px}
+.side-logo b{color:#fff;font-size:17px;letter-spacing:1px}
+.side-logo small{display:block;font-size:10px;color:#8fa0bd;letter-spacing:1px}
+.nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:8px;
+  cursor:pointer;margin-bottom:3px;font-size:14px;transition:.15s}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:var(--blue);color:#fff;font-weight:600}
+.nav-item .tag{font-size:10px;opacity:.55;font-family:Consolas,monospace}
+.side-foot{padding:14px 18px;font-size:11px;color:#6d7f9e;border-top:1px solid rgba(255,255,255,.08);line-height:1.7}
+.main{margin-left:216px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:58px;background:#fff;border-bottom:1px solid var(--line);display:flex;
+  align-items:center;padding:0 26px;gap:14px;position:sticky;top:0;z-index:9}
+.topbar h2{font-size:17px}
+.topbar .ptag{font-size:11px;color:var(--blue);background:#eaf1ff;border-radius:20px;padding:2px 10px}
+.topbar .sp{flex:1}
+.bell{position:relative;border:1px solid var(--line);background:#fff;border-radius:8px;
+  width:36px;height:36px;font-size:16px}
+.bell i{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:10px;
+  font-style:normal;border-radius:9px;padding:1px 5px}
+.who{display:flex;flex-direction:column;align-items:flex-end;line-height:1.3}
+.who b{font-size:13px}
+.who span{font-size:11px;color:var(--t2)}
+.btn-out{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;font-size:13px}
+.btn-out:hover{border-color:var(--red);color:var(--red)}
+.content{padding:22px 26px;flex:1}
+/* ---------- 通用组件 ---------- */
+.card{background:#fff;border-radius:12px;border:1px solid var(--line);padding:18px 20px;margin-bottom:18px}
+.card h3{font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card h3 .tag{font-size:10px;color:var(--blue);background:#eaf1ff;padding:2px 8px;border-radius:20px;
+  font-family:Consolas,monospace}
+.card h3 .sp{flex:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.fi{display:flex;flex-direction:column;gap:5px}
+.fi.full{grid-column:1/-1}
+.fi label{font-size:12px;color:var(--t2)}
+.fi label b{color:var(--red)}
+.ipt{border:1px solid var(--line);border-radius:8px;padding:8px 12px;outline:none;background:#fff;width:100%}
+.ipt:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,109,232,.12)}
+textarea.ipt{resize:vertical;min-height:70px}
+.btn{border:none;border-radius:8px;padding:9px 20px;font-size:14px;background:var(--blue);color:#fff;transition:.15s}
+.btn:hover{background:var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--t1);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--blue);color:var(--blue)}
+.btn.green{background:var(--green)}.btn.green:hover{background:#1a9468}
+.btn.red{background:var(--red)}.btn.red:hover{background:#c73e3e}
+.btn.sm{padding:5px 12px;font-size:12px;border-radius:6px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;
+  background:#fff;user-select:none;transition:.15s}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#f7f9fc;color:var(--t2);font-weight:600;text-align:left;padding:10px 12px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid #f0f3f8;vertical-align:middle}
+.tbl tr:hover td{background:#fafcff}
+.tbl tr.row-red td{background:#fdecec}
+.tbl tr.row-yellow td{background:#fff7e6}
+.bdg{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;white-space:nowrap}
+.b-gray{background:#f0f2f5;color:#7a8499}.b-blue{background:#e8f1ff;color:#2b6de8}
+.b-green{background:#e6f7ef;color:#17996b}.b-orange{background:#fdf2e0;color:#c77f0a}
+.b-red{background:#fdeaea;color:#d33a3a}
+.pg{width:120px;height:7px;background:#edf1f7;border-radius:5px;display:inline-block;vertical-align:middle;margin-right:8px}
+.pg i{display:block;height:100%;border-radius:5px;background:var(--blue)}
+.near{font-size:11px;color:#c77f0a;margin-left:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi .num{font-size:30px;font-weight:700;line-height:1.2}
+.kpi .lbl{color:var(--t2);font-size:13px;margin-top:3px}
+.kpi .sub{font-size:11px;color:var(--t3);margin-top:5px}
+.kpi::after{content:"";position:absolute;right:-18px;top:-18px;width:70px;height:70px;border-radius:50%;opacity:.09}
+.kpi.c1 .num{color:var(--blue)}.kpi.c1::after{background:var(--blue)}
+.kpi.c2 .num{color:var(--green)}.kpi.c2::after{background:var(--green)}
+.kpi.c3 .num{color:var(--red)}.kpi.c3::after{background:var(--red)}
+.kpi.c4 .num{color:var(--orange)}.kpi.c4::after{background:var(--orange)}
+.charts{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;margin-bottom:18px}
+.chart-box{height:300px;width:100%}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filters select,.filters input{border:1px solid var(--line);border-radius:8px;padding:7px 12px;background:#fff}
+.empty{color:var(--t3);text-align:center;padding:34px 0;font-size:13px}
+/* 图片/附件 */
+.pics{display:flex;flex-wrap:wrap;gap:10px}
+.pic{width:130px;height:88px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
+.pic-add{width:130px;height:88px;border:1px dashed #b9c6da;border-radius:8px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;color:var(--t3);font-size:12px;cursor:pointer;background:#fafbfd}
+.pic-add:hover{border-color:var(--blue);color:var(--blue)}
+.fitem{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;
+  padding:5px 10px;font-size:12px;margin:0 8px 8px 0;background:#fafbfd;max-width:260px}
+.fitem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(15,25,45,.45);z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:24px}
+.modal{background:#fff;border-radius:14px;width:680px;max-width:96vw;max-height:88vh;
+  display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.modal.wide{width:860px}
+.m-head{display:flex;align-items:center;padding:16px 22px;border-bottom:1px solid var(--line)}
+.m-head h3{font-size:16px}
+.m-head .x{margin-left:auto;border:none;background:none;font-size:20px;color:var(--t3);cursor:pointer}
+.m-body{padding:18px 22px;overflow-y:auto}
+.m-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.dl{display:grid;grid-template-columns:96px 1fr;gap:8px 12px;font-size:13px}
+.dl dt{color:var(--t2)}
+/* 消息 */
+.msg{display:flex;gap:10px;padding:12px 6px;border-bottom:1px solid #f0f3f8;align-items:flex-start}
+.msg .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:6px;flex-shrink:0}
+.msg .dot.read{background:#d6dde8}
+.msg .c{flex:1}.msg .t{color:var(--t3);font-size:12px;white-space:nowrap}
+/* toast */
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2b3a55;color:#fff;
+  padding:10px 26px;border-radius:24px;z-index:200;box-shadow:0 8px 30px rgba(0,0,0,.25);font-size:13px}
+/* 打印 */
+#printArea{display:none}
+@media print{
+  .sidebar,.topbar,.card,.toast,.mask,.login-wrap{display:none!important}
+  .main{margin-left:0!important}
+  #printArea{display:block;padding:10px;color:#000}
+  #printArea table{width:100%;border-collapse:collapse;font-size:12px}
+  #printArea th,#printArea td{border:1px solid #444;padding:6px 8px;text-align:center}
+  #printArea h1{text-align:center;font-size:20px;margin-bottom:6px}
+  #printArea .meta{text-align:center;font-size:12px;color:#333;margin-bottom:16px}
+  #printArea h3{margin:16px 0 8px;font-size:14px}
+  #printArea .sign{margin-top:36px;display:flex;justify-content:space-between;font-size:13px}
+}
+@media (max-width:1100px){.grid2,.form-grid{grid-template-columns:1fr}.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+
+  <!-- ==================== 登录页 ==================== -->
+  <div class="login-wrap" v-if="!currentUser">
+    <div class="login-card">
+      <div class="logo">
+        <div class="mark">团</div>
+        <div>
+          <h1>团档智督</h1>
+        </div>
+      </div>
+      <div class="login-sub">基层团组织台账智能督办与材料归档平台 · 演示原型</div>
+      <div class="acc-group">
+        <h3>团委管理端</h3>
+        <div class="acc-grid">
+          <div class="acc admin" v-for="u in usersOf('admin')" :key="u.id" @click="login(u.id)">
+            <b>{{u.name}}</b><span>{{u.title}} · {{deptName(u.deptId)}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="acc-group">
+        <h3>团委干事端（任务下发 / 材料审核）</h3>
+        <div class="acc-grid">
+          <div class="acc clerk" v-for="u in usersOf('clerk')" :key="u.id" @click="login(u.id)">
+            <b>{{u.name}}</b><span>{{u.title}} · {{deptName(u.deptId)}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="acc-group">
+        <h3>支部端（材料填报 / 档案维护）</h3>
+        <div class="acc-grid">
+          <div class="acc branch" v-for="u in usersOf('branch')" :key="u.id" @click="login(u.id)">
+            <b>{{u.name}}</b><span>{{u.title}} · {{deptName(u.deptId)}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="login-foot">演示原型：数据保存在浏览器本地（localStorage） · 点击账号即可一键登录
+        <a @click="resetDemo">重置演示数据</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 主应用 ==================== -->
+  <template v-else>
+    <aside class="sidebar">
+      <div class="side-logo">
+        <div class="mark">团</div>
+        <div><b>团档智督</b><small>智能督办 · 材料归档</small></div>
+      </div>
+      <nav class="nav">
+        <div class="nav-item" v-for="n in navItems" :key="n[0]" :class="{active:page===n[0]}" @click="go(n[0])">
+          <span>{{n[1]}}</span><span class="tag">{{n[2]}}</span>
+        </div>
+      </nav>
+      <div class="side-foot">XX镇团委 · 演示版<br>对应《简道云搭建方案》F1-F5 / S1-S4</div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <h2>{{pageTitle}}</h2>
+        <span class="ptag" v-if="pageTag">{{pageTag}}</span>
+        <div class="sp"></div>
+        <button class="bell" @click="go('messages')" title="消息中心">
+          <span v-if="unreadCount">{{unreadCount}}</span><span v-else style="opacity:.35">0</span>
+        </button>
+        <div class="who">
+          <b>{{currentUser.name}} · {{roleText}}</b>
+          <span>{{deptName(currentUser.deptId)}}</span>
+        </div>
+        <button class="btn-out" @click="logout">退出</button>
+      </header>
+
+      <main class="content">
+
+        <!-- ============ D1 督办驾驶舱 ============ -->
+        <section v-if="page==='dashboard'">
+          <div class="kpis">
+            <div class="kpi c1"><div class="num">{{kpis.taskTotal}}</div><div class="lbl">团务任务总数</div><div class="sub">覆盖 {{branchCount}} 个团支部</div></div>
+            <div class="kpi c2"><div class="num">{{kpis.ratePct}}%</div><div class="lbl">总体任务完成率</div><div class="sub">已交 {{kpis.done}} / 应交 {{kpis.total}}</div></div>
+            <div class="kpi c3"><div class="num">{{kpis.overdue}}</div><div class="lbl">逾期未交（标红预警）</div><div class="sub">S2 引擎每日自动标记</div></div>
+            <div class="kpi c4"><div class="num">{{kpis.pending}}</div><div class="lbl">待审核材料</div><div class="sub">支部已提交 · 等待团委审核</div></div>
+          </div>
+          <div class="charts">
+            <div class="card" style="margin-bottom:0">
+              <h3>各团支部任务完成率<span class="sp"></span><span class="tag">A2 聚合</span></h3>
+              <div class="chart-box" ref="barChart"></div>
+            </div>
+            <div class="card" style="margin-bottom:0">
+              <h3>任务类型分布<span class="sp"></span><span class="tag">A1 聚合</span></h3>
+              <div class="chart-box" ref="pieChart"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>每周材料提交趋势<span class="sp"></span><span class="tag">F2 台账</span></h3>
+            <div class="chart-box" ref="lineChart" style="height:240px"></div>
+          </div>
+          <div class="card">
+            <h3>临期 / 逾期任务清单<span class="sp"></span><span class="tag">S1 · S2 督办</span></h3>
+            <table class="tbl" v-if="warnList.length">
+              <thead><tr><th>任务名称</th><th>任务类型</th><th>责任支部</th><th>负责人</th><th>截止时间</th><th>督办状态</th></tr></thead>
+              <tbody>
+                <tr v-for="e in warnList" :key="e.id" :class="rowCls(e)">
+                  <td>{{e.taskName}}</td><td>{{e.taskType}}</td><td>{{deptName(e.deptId)}}</td>
+                  <td>{{userName(e.leaderId)}}</td><td>{{fmt(e.deadline)}}</td>
+                  <td><span class="bdg" :class="stClass(e.status)">{{e.status}}</span><span class="near" v-if="nearText(e)">{{nearText(e)}}</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty" v-else>暂无临期/逾期任务</div>
+          </div>
+        </section>
+
+        <!-- ============ F1 任务下发 ============ -->
+        <section v-if="page==='tasks'">
+          <div class="grid2">
+            <div class="card">
+              <h3>新建团务任务<span class="tag">F1</span></h3>
+              <div class="form-grid">
+                <div class="fi"><label>任务名称 <b>*</b></label><input class="ipt" v-model="taskForm.name" placeholder="如：十月主题团日活动"></div>
+                <div class="fi"><label>任务类型 <b>*</b></label>
+                  <select class="ipt" v-model="taskForm.type"><option value="">请选择</option><option v-for="t in types" :key="t">{{t}}</option></select></div>
+                <div class="fi"><label>统一截止时间 <b>*</b></label><input class="ipt" type="datetime-local" v-model="taskForm.deadline"></div>
+                <div class="fi"><label>优先级</label>
+                  <select class="ipt" v-model="taskForm.priority"><option>普通</option><option>重要</option><option>紧急</option></select></div>
+                <div class="fi full"><label>任务要求说明 <b>*</b></label>
+                  <textarea class="ipt" v-model="taskForm.desc" placeholder="写明活动要求与材料标准"></textarea></div>
+                <div class="fi full"><label>材料清单（勾选需提交的材料）</label>
+                  <div class="chip-row">
+                    <span class="chip" v-for="c in materialOpts" :key="c" :class="{on:taskForm.checklist.includes(c)}"
+                      @click="toggle(taskForm.checklist,c)">{{c}}</span>
+                  </div></div>
+                <div class="fi full"><label>目标支部 <b>*</b>（勾选后系统自动写入督办台账 S1-S4 跟踪）</label>
+                  <div class="chip-row">
+                    <span class="chip" v-for="d in branches" :key="d.id" :class="{on:taskForm.targets.includes(d.id)}"
+                      @click="toggle(taskForm.targets,d.id)">{{d.name}}</span>
+                  </div></div>
+              </div>
+              <div style="margin-top:16px;text-align:right">
+                <button class="btn" @click="createTask">发布任务</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>已下发任务<span class="tag">F1</span></h3>
+              <table class="tbl">
+                <thead><tr><th>任务</th><th>类型</th><th>截止时间</th><th>优先级</th><th>完成进度</th></tr></thead>
+                <tbody>
+                  <tr v-for="t in db.tasks" :key="t.id">
+                    <td><b>{{t.name}}</b><div style="font-size:11px;color:var(--t3);margin-top:2px">{{t.code}}</div></td>
+                    <td>{{t.type}}</td><td>{{fmt(t.deadline)}}</td>
+                    <td><span class="bdg" :class="t.priority==='紧急'?'b-red':(t.priority==='重要'?'b-orange':'b-gray')">{{t.priority}}</span></td>
+                    <td><span class="pg"><i :style="{width:taskProg(t.id).pct+'%'}"></i></span>{{taskProg(t.id).done}}/{{taskProg(t.id).total}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ F2 督办台账 ============ -->
+        <section v-if="page==='ledger'">
+          <div class="card">
+            <h3>督办台账（任务 × 支部）<span class="tag">F2</span><span class="sp"></span>
+              <button class="btn ghost sm" @click="runEngine(false)">立即运行督办引擎（S1/S2）</button></h3>
+            <div class="filters">
+              <select v-model="fStatus"><option value="">全部状态</option><option v-for="s in statuses" :key="s">{{s}}</option></select>
+              <select v-model="fType"><option value="">全部类型</option><option v-for="t in types" :key="t">{{t}}</option></select>
+              <select v-model="fDept"><option value="">全部支部</option><option v-for="d in branches" :key="d.id" :value="d.id">{{d.name}}</option></select>
+              <span style="color:var(--t3);font-size:12px">共 {{ledgerFiltered.length}} 条 · 红行=逾期 · 黄行=临期(3天内)</span>
+            </div>
+            <table class="tbl" v-if="ledgerFiltered.length">
+              <thead><tr><th>台账编号</th><th>任务名称</th><th>类型</th><th>责任支部</th><th>负责人</th><th>截止时间</th><th>督办状态</th><th>提交时间</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr v-for="e in ledgerFiltered" :key="e.id" :class="rowCls(e)">
+                  <td style="font-family:Consolas,monospace;font-size:12px">{{e.id}}</td>
+                  <td><b>{{e.taskName}}</b></td><td>{{e.taskType}}</td>
+                  <td>{{deptName(e.deptId)}}</td><td>{{userName(e.leaderId)}}</td>
+                  <td>{{fmt(e.deadline)}}<span class="near" v-if="nearText(e)">{{nearText(e)}}</span></td>
+                  <td><span class="bdg" :class="stClass(e.status)">{{e.status}}</span></td>
+                  <td>{{fmt(e.submitTime)}}</td>
+                  <td><button class="btn ghost sm" v-if="findSub(e.id)" @click="viewSub(findSub(e.id))">查看填报</button>
+                      <span v-else style="color:var(--t3);font-size:12px">未填报</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty" v-else>暂无台账记录</div>
+          </div>
+        </section>
+
+        <!-- ============ F3 材料审核（团委端） ============ -->
+        <section v-if="page==='review'">
+          <div class="card">
+            <h3>待审核材料<span class="tag">F3 流程</span></h3>
+            <table class="tbl" v-if="pendingSubs.length">
+              <thead><tr><th>提交时间</th><th>任务</th><th>填报支部</th><th>填报人</th><th>活动时间</th><th>材料</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr v-for="s in pendingSubs" :key="s.id">
+                  <td>{{fmt(s.submitTime)}}</td><td><b>{{subTaskName(s)}}</b></td>
+                  <td>{{deptName(s.deptId)}}</td><td>{{userName(s.userId)}}</td><td>{{fmt(s.activityTime)}}</td>
+                  <td>照片 {{s.photos.length}} 张 · 附件 {{s.files.length}} 个</td>
+                  <td><button class="btn sm" @click="openReview(s)">审核</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty" v-else>暂无待审核材料</div>
+          </div>
+          <div class="card">
+            <h3>审核历史<span class="tag">F3</span></h3>
+            <table class="tbl" v-if="reviewedSubs.length">
+              <thead><tr><th>任务</th><th>支部</th><th>提交时间</th><th>审核结果</th><th>审核意见</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr v-for="s in reviewedSubs" :key="s.id">
+                  <td>{{subTaskName(s)}}</td><td>{{deptName(s.deptId)}}</td><td>{{fmt(s.submitTime)}}</td>
+                  <td><span class="bdg" :class="s.status==='已通过'?'b-green':'b-orange'">{{s.status}}</span></td>
+                  <td style="max-width:260px">{{s.opinion||'-'}}</td>
+                  <td><button class="btn ghost sm" @click="viewSub(s)">查看</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty" v-else>暂无记录</div>
+          </div>
+        </section>
+
+        <!-- ============ D3 支部工作台 ============ -->
+        <section v-if="page==='workbench'">
+          <div class="kpis">
+            <div class="kpi c1"><div class="num">{{myStats.total}}</div><div class="lbl">我的任务</div><div class="sub">{{deptName(currentUser.deptId)}}</div></div>
+            <div class="kpi c2"><div class="num">{{myStats.done}}</div><div class="lbl">已提交</div><div class="sub">含待审核与已通过</div></div>
+            <div class="kpi c2"><div class="num">{{myStats.ratePct}}%</div><div class="lbl">完成率</div><div class="sub">已交 / 应交</div></div>
+            <div class="kpi c3"><div class="num">{{myStats.overdue}}</div><div class="lbl">逾期预警</div><div class="sub">请尽快补报</div></div>
+          </div>
+          <div class="card">
+            <h3>我的督办任务<span class="tag">F2/F3</span></h3>
+            <table class="tbl" v-if="myLedger.length">
+              <thead><tr><th>任务名称</th><th>类型</th><th>截止时间</th><th>督办状态</th><th>提交时间</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr v-for="e in myLedger" :key="e.id" :class="rowCls(e)">
+                  <td><b>{{e.taskName}}</b></td><td>{{e.taskType}}</td>
+                  <td>{{fmt(e.deadline)}}<span class="near" v-if="nearText(e)">{{nearText(e)}}</span></td>
+                  <td><span class="bdg" :class="stClass(e.status)">{{e.status}}</span></td>
+                  <td>{{fmt(e.submitTime)}}</td>
+                  <td>
+                    <button class="btn sm" v-if="['未提交','已驳回','逾期'].includes(e.status)" @click="openSubmit(e)">
+                      {{e.status==='已驳回'?'重新填报':'填报材料'}}</button>
+                    <button class="btn ghost sm" v-if="findSub(e.id)" @click="viewSub(findSub(e.id))">查看</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty" v-else>暂无任务</div>
+          </div>
+          <div class="card">
+            <h3>最新督办提醒<span class="tag">S1-S4</span><span class="sp"></span>
+              <button class="btn ghost sm" @click="go('messages')">全部消息</button></h3>
+            <div v-if="myNotices.slice(0,5).length">
+              <div class="msg" v-for="n in myNotices.slice(0,5)" :key="n.id">
+                <span class="dot" :class="{read:n.read}"></span>
+                <div class="c">{{n.content}}</div><div class="t">{{fmt(n.time)}}</div>
+              </div>
+            </div>
+            <div class="empty" v-else>暂无消息</div>
+          </div>
+        </section>
+
+        <!-- ============ F5 档案检索 ============ -->
+        <section v-if="page==='archive'">
+          <div class="card">
+            <h3>活动材料归档库<span class="tag">F5</span></h3>
+            <div class="filters">
+              <select v-model="aYear"><option value="">全部年份</option><option v-for="y in archiveYears" :key="y">{{y}}</option></select>
+              <select v-model="aType"><option value="">全部类型</option><option v-for="t in types" :key="t">{{t}}</option></select>
+              <select v-model="aDept"><option value="">全部支部</option><option v-for="d in branches" :key="d.id" :value="d.id">{{d.name}}</option></select>
+              <input v-model="aKw" placeholder="关键词检索任务/摘要" style="width:200px">
+              <span style="color:var(--t3);font-size:12px">共 {{archiveFiltered.length}} 卷 · 审核通过自动归档（S3b）</span>
+            </div>
+            <table class="tbl" v-if="archiveFiltered.length">
+              <thead><tr><th>归档编号</th><th>来源任务</th><th>类型</th><th>责任支部</th><th>活动时间</th><th>入库方式</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr v-for="a in archiveFiltered" :key="a.id">
+                  <td style="font-family:Consolas,monospace;font-size:12px">{{a.code}}</td>
+                  <td><b>{{a.sourceTask}}</b></td><td>{{a.type}}</td><td>{{deptName(a.deptId)}}</td>
+                  <td>{{fmt(a.activityTime)}}</td>
+                  <td><span class="bdg" :class="a.mode==='自动归档'?'b-green':'b-gray'">{{a.mode}}</span></td>
+                  <td><button class="btn ghost sm" @click="openArchive(a)">查看</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty" v-else>暂无归档记录</div>
+          </div>
+        </section>
+
+        <!-- ============ F4 团员档案 ============ -->
+        <section v-if="page==='members'">
+          <div class="card">
+            <h3>团员档案库<span class="tag">F4</span><span class="sp"></span>
+              <button class="btn sm" @click="openMemberAdd">新增团员</button></h3>
+            <div class="filters">
+              <input v-model="mKw" placeholder="姓名/编号检索" style="width:180px">
+              <select v-model="mDept"><option value="">全部支部</option><option v-for="d in myBranchOptions" :key="d.id" :value="d.id">{{d.name}}</option></select>
+              <select v-model="mStatus"><option value="">全部团籍状态</option><option>在册</option><option>毕业转出</option><option>失联</option></select>
+              <span style="color:var(--t3);font-size:12px">共 {{memberFiltered.length}} 人 · 身份证号脱敏显示</span>
+            </div>
+            <table class="tbl" v-if="memberFiltered.length">
+              <thead><tr><th>团员编号</th><th>姓名</th><th>性别</th><th>所在支部</th><th>入团时间</th><th>团籍状态</th><th>材料归档完整度</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr v-for="m in memberFiltered" :key="m.id">
+                  <td style="font-family:Consolas,monospace;font-size:12px">{{m.code}}</td>
+                  <td><b>{{m.name}}</b></td><td>{{m.gender}}</td><td>{{deptName(m.deptId)}}</td>
+                  <td>{{m.joinDate}}</td>
+                  <td><span class="bdg" :class="m.leagueStatus==='在册'?'b-green':'b-gray'">{{m.leagueStatus}}</span></td>
+                  <td><span class="pg"><i :style="{width:matRate(m)+'%',background:matRate(m)>=80?'var(--green)':(matRate(m)>=50?'var(--orange)':'var(--red)')}"></i></span>{{matRate(m)}}%</td>
+                  <td><button class="btn ghost sm" @click="openMember(m)">档案详情</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty" v-else>暂无团员档案</div>
+          </div>
+        </section>
+
+        <!-- ============ 检查报表 ============ -->
+        <section v-if="page==='report'">
+          <div class="card">
+            <h3>团务检查报表<span class="sp"></span>
+              <button class="btn ghost sm" @click="printReport">打印 / 导出PDF</button>
+              <button class="btn ghost sm" @click="exportCSV">导出台账CSV</button></h3>
+            <table class="tbl">
+              <thead><tr><th>团支部</th><th>应交任务</th><th>已通过</th><th>待审核</th><th>已驳回</th><th>逾期</th><th>未提交</th><th>完成率</th></tr></thead>
+              <tbody>
+                <tr v-for="r in reportRows" :key="r.name">
+                  <td><b>{{r.name}}</b></td><td>{{r.total}}</td><td>{{r.passed}}</td><td>{{r.pending}}</td>
+                  <td>{{r.rejected}}</td><td :style="r.overdue?'color:var(--red);font-weight:700':''">{{r.overdue}}</td>
+                  <td>{{r.unsub}}</td>
+                  <td><span class="pg"><i :style="{width:r.ratePct+'%'}"></i></span>{{r.ratePct}}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="printArea">
+            <h1>基层团组织团务任务完成情况检查报表</h1>
+            <div class="meta">编制单位：XX镇团委 · 生成时间：{{nowText}} · 统计范围：全部在档团务任务</div>
+            <h3>一、各支部任务完成情况</h3>
+            <table>
+              <thead><tr><th>团支部</th><th>应交任务</th><th>已通过</th><th>待审核</th><th>已驳回</th><th>逾期</th><th>完成率</th></tr></thead>
+              <tbody>
+                <tr v-for="r in reportRows" :key="'p'+r.name">
+                  <td>{{r.name}}</td><td>{{r.total}}</td><td>{{r.passed}}</td><td>{{r.pending}}</td><td>{{r.rejected}}</td><td>{{r.overdue}}</td><td>{{r.ratePct}}%</td>
+                </tr>
+              </tbody>
+            </table>
+            <h3>二、逾期未完成任务清单</h3>
+            <table>
+              <thead><tr><th>序号</th><th>任务名称</th><th>责任支部</th><th>截止时间</th></tr></thead>
+              <tbody>
+                <tr v-for="(e,i) in db.ledger.filter(x=>x.status==='逾期')" :key="'o'+e.id">
+                  <td>{{i+1}}</td><td>{{e.taskName}}</td><td>{{deptName(e.deptId)}}</td><td>{{fmt(e.deadline)}}</td>
+                </tr>
+                <tr v-if="!db.ledger.some(x=>x.status==='逾期')"><td colspan="4">无</td></tr>
+              </tbody>
+            </table>
+            <div class="sign"><span>团委书记（签字）：</span><span>填报日期：</span></div>
+          </div>
+        </section>
+
+        <!-- ============ 消息中心 ============ -->
+        <section v-if="page==='messages'">
+          <div class="card">
+            <h3>督办消息<span class="tag">S1-S4</span><span class="sp"></span>
+              <button class="btn ghost sm" @click="markAllRead">全部标记已读</button></h3>
+            <div v-if="myNotices.length">
+              <div class="msg" v-for="n in myNotices" :key="n.id">
+                <span class="dot" :class="{read:n.read}"></span>
+                <div class="c">{{n.content}}</div><div class="t">{{fmt(n.time)}}</div>
+              </div>
+            </div>
+            <div class="empty" v-else>暂无消息</div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- ==================== 弹窗 ==================== -->
+    <div class="mask" v-if="modal" @click.self="closeModal">
+      <div class="modal" :class="{wide:modal.type==='submit'||modal.type==='review'}">
+
+        <!-- 填报表单 F3 -->
+        <template v-if="modal.type==='submit'">
+          <div class="m-head"><h3>任务材料填报 — {{modal.e.taskName}}</h3><button class="x" @click="closeModal">×</button></div>
+          <div class="m-body">
+            <div class="form-grid">
+              <div class="fi"><label>填报支部</label><input class="ipt" :value="deptName(currentUser.deptId)" disabled></div>
+              <div class="fi"><label>填报人</label><input class="ipt" :value="currentUser.name" disabled></div>
+              <div class="fi"><label>活动/会议时间 <b>*</b></label><input class="ipt" type="datetime-local" v-model="modal.sub.activityTime"></div>
+              <div class="fi"><label>活动/会议地点 <b>*</b></label><input class="ipt" v-model="modal.sub.place"></div>
+              <div class="fi"><label>应到人数</label><input class="ipt" type="number" v-model.number="modal.sub.expected"></div>
+              <div class="fi"><label>实到人数</label><input class="ipt" type="number" v-model.number="modal.sub.actual"></div>
+              <div class="fi full"><label>会议/活动纪要 <b>*</b></label>
+                <textarea class="ipt" rows="3" v-model="modal.sub.summary"></textarea></div>
+              <div class="fi full"><label>现场照片 <b>*</b>（至少1张）</label>
+                <div class="pics">
+                  <img class="pic" v-for="(p,i) in modal.sub.photos" :key="i" :src="p.dataURL" :title="p.name">
+                  <label class="pic-add"><input type="file" accept="image/*" multiple hidden @change="onPics">+ 上传照片</label>
+                </div></div>
+              <div class="fi full"><label>签到表 <b>*</b></label>
+                <label class="pic-add" style="width:100%;height:56px;flex-direction:row;gap:8px">
+                  <input type="file" hidden @change="onSign">点击上传签到表扫描件</label>
+                <div style="margin-top:6px"><span class="fitem" v-for="(f,i) in modal.sub.files" :key="i"><span>{{f.name}}</span>
+                  <a style="color:var(--red);cursor:pointer" @click="modal.sub.files.splice(i,1)">×</a></span></div></div>
+              <div class="fi full"><label>提交前材料自检（全部勾选方可提交）</label>
+                <div class="chip-row">
+                  <span class="chip" v-for="c in selfChecks" :key="c" :class="{on:modal.sub.selfCheck.includes(c)}"
+                    @click="toggleCheck(c)">{{c}}</span>
+                </div></div>
+            </div>
+          </div>
+          <div class="m-foot">
+            <button class="btn ghost" @click="closeModal">取消</button>
+            <button class="btn" :disabled="!canSubmit" @click="doSubmit">提交审核（S3a 联动台账）</button>
+          </div>
+        </template>
+
+        <!-- 审核弹窗 F3 -->
+        <template v-else-if="modal.type==='review'">
+          <div class="m-head"><h3>材料审核 — {{subTaskName(modal.sub)}}</h3><button class="x" @click="closeModal">×</button></div>
+          <div class="m-body">
+            <dl class="dl" style="margin-bottom:14px">
+              <dt>填报支部</dt><dd>{{deptName(modal.sub.deptId)}}（{{userName(modal.sub.userId)}}）</dd>
+              <dt>活动时间</dt><dd>{{fmt(modal.sub.activityTime)}} · {{modal.sub.place}}</dd>
+              <dt>参会情况</dt><dd>应到 {{modal.sub.expected}} 人 · 实到 {{modal.sub.actual}} 人</dd>
+              <dt>活动纪要</dt><dd>{{modal.sub.summary}}</dd>
+              <dt>材料自检</dt><dd>{{modal.sub.selfCheck.join(' / ')}}</dd>
+              <dt>现场照片</dt><dd>
+                <div class="pics"><img class="pic" v-for="(p,i) in modal.sub.photos" :key="i" :src="p.dataURL" :title="p.name"></div>
+              </dd>
+              <dt>附件</dt><dd><span class="fitem" v-for="(f,i) in modal.sub.files" :key="i"><span>{{f.name}}</span></span></dd>
+            </dl>
+            <div class="fi"><label>审核意见（驳回时必填）</label><textarea class="ipt" v-model="modal.opinion" placeholder="通过可不填；驳回请写明整改要求"></textarea></div>
+          </div>
+          <div class="m-foot">
+            <button class="btn ghost" @click="closeModal">取消</button>
+            <button class="btn red" @click="doReview(false)">驳回重报（S4）</button>
+            <button class="btn green" @click="doReview(true)">审核通过（S3b 自动归档）</button>
+          </div>
+        </template>
+
+        <!-- 填报详情（只读） -->
+        <template v-else-if="modal.type==='subDetail'">
+          <div class="m-head"><h3>填报详情 — {{subTaskName(modal.sub)}}</h3><button class="x" @click="closeModal">×</button></div>
+          <div class="m-body">
+            <dl class="dl">
+              <dt>填报支部</dt><dd>{{deptName(modal.sub.deptId)}}（{{userName(modal.sub.userId)}}）</dd>
+              <dt>活动时间</dt><dd>{{fmt(modal.sub.activityTime)}} · {{modal.sub.place}}</dd>
+              <dt>参会情况</dt><dd>应到 {{modal.sub.expected}} 人 · 实到 {{modal.sub.actual}} 人</dd>
+              <dt>活动纪要</dt><dd>{{modal.sub.summary}}</dd>
+              <dt>审核状态</dt><dd><span class="bdg" :class="stClass(subLedgerStatus(modal.sub))">{{subLedgerStatus(modal.sub)}}</span></dd>
+              <dt>审核意见</dt><dd>{{modal.sub.opinion||'-'}}</dd>
+              <dt>现场照片</dt><dd><div class="pics"><img class="pic" v-for="(p,i) in modal.sub.photos" :key="i" :src="p.dataURL" :title="p.name"></div></dd>
+              <dt>附件</dt><dd><span class="fitem" v-for="(f,i) in modal.sub.files" :key="i"><span>{{f.name}}</span></span></dd>
+            </dl>
+          </div>
+          <div class="m-foot"><button class="btn ghost" @click="closeModal">关闭</button></div>
+        </template>
+
+        <!-- 归档详情 F5 -->
+        <template v-else-if="modal.type==='archive'">
+          <div class="m-head"><h3>归档详情 — {{modal.a.code}}</h3><button class="x" @click="closeModal">×</button></div>
+          <div class="m-body">
+            <dl class="dl">
+              <dt>来源任务</dt><dd>{{modal.a.sourceTask}}</dd>
+              <dt>材料类型</dt><dd>{{modal.a.type}} · {{modal.a.year}} 年度</dd>
+              <dt>责任支部</dt><dd>{{deptName(modal.a.deptId)}}</dd>
+              <dt>活动时间</dt><dd>{{fmt(modal.a.activityTime)}}</dd>
+              <dt>入库方式</dt><dd><span class="bdg" :class="modal.a.mode==='自动归档'?'b-green':'b-gray'">{{modal.a.mode}}</span></dd>
+              <dt>归档摘要</dt><dd>{{modal.a.summary}}</dd>
+              <dt>照片</dt><dd><div class="pics"><img class="pic" v-for="(p,i) in modal.a.photos" :key="i" :src="p.dataURL" :title="p.name"></div></dd>
+              <dt>附件</dt><dd><span class="fitem" v-for="(f,i) in modal.a.files" :key="i"><span>{{f.name}}</span></span></dd>
+            </dl>
+          </div>
+          <div class="m-foot"><button class="btn ghost" @click="closeModal">关闭</button></div>
+        </template>
+
+        <!-- 团员档案详情 F4 -->
+        <template v-else-if="modal.type==='member'">
+          <div class="m-head"><h3>团员档案 — {{modal.m.name}}（{{modal.m.code}}）</h3><button class="x" @click="closeModal">×</button></div>
+          <div class="m-body">
+            <dl class="dl" style="margin-bottom:14px">
+              <dt>姓名</dt><dd>{{modal.m.name}} · {{modal.m.gender}}</dd>
+              <dt>所在支部</dt><dd>{{deptName(modal.m.deptId)}}</dd>
+              <dt>入团时间</dt><dd>{{modal.m.joinDate}}</dd>
+              <dt>团籍状态</dt><dd>{{modal.m.leagueStatus}}</dd>
+              <dt>团内职务</dt><dd>{{modal.m.post||'团员'}}</dd>
+              <dt>身份证号</dt><dd>{{maskId(modal.m.idcard)}}</dd>
+            </dl>
+            <table class="tbl">
+              <thead><tr><th>档案材料</th><th>归档状态</th><th>存放位置</th><th>归档日期</th></tr></thead>
+              <tbody>
+                <tr v-for="(mt,i) in modal.m.materials" :key="i">
+                  <td>{{mt.name}}</td>
+                  <td><span class="bdg" :class="mt.archived==='已归档'?'b-green':'b-orange'">{{mt.archived}}</span></td>
+                  <td>{{mt.loc||'-'}}</td><td>{{mt.date||'-'}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="m-foot"><button class="btn ghost" @click="closeModal">关闭</button></div>
+        </template>
+
+        <!-- 新增团员 F4 -->
+        <template v-else>
+          <div class="m-head"><h3>新增团员档案</h3><button class="x" @click="closeModal">×</button></div>
+          <div class="m-body">
+            <div class="form-grid">
+              <div class="fi"><label>姓名 <b>*</b></label><input class="ipt" v-model="memberForm.name"></div>
+              <div class="fi"><label>性别</label><select class="ipt" v-model="memberForm.gender"><option>男</option><option>女</option></select></div>
+              <div class="fi"><label>所在支部</label>
+                <select class="ipt" v-model="memberForm.deptId">
+                  <option v-for="d in myBranchOptions" :key="d.id" :value="d.id">{{d.name}}</option></select></div>
+              <div class="fi"><label>入团时间</label><input class="ipt" type="date" v-model="memberForm.joinDate"></div>
+              <div class="fi"><label>团籍状态</label><select class="ipt" v-model="memberForm.leagueStatus"><option>在册</option><option>毕业转出</option><option>失联</option></select></div>
+              <div class="fi"><label>团内职务</label><input class="ipt" v-model="memberForm.post" placeholder="默认：团员"></div>
+              <div class="fi full"><label>身份证号</label><input class="ipt" v-model="memberForm.idcard" maxlength="18"></div>
+            </div>
+          </div>
+          <div class="m-foot">
+            <button class="btn ghost" @click="closeModal">取消</button>
+            <button class="btn" @click="doMemberAdd">保存</button>
+          </div>
+        </template>
+
+      </div>
+    </div>
+
+    <div class="toast" v-if="toastMsg">{{toastMsg}}</div>
+  </template>
+</div>
+
+<script>
+/* ================= 基础工具 ================= */
+const DB_KEY='tdzz_db_v1', SES_KEY='tdzz_session_v1';
+const p2=n=>String(n).padStart(2,'0'), p3=n=>String(n).padStart(3,'0');
+const fmtT=t=>{ if(!t) return '-'; const d=new Date(t);
+  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+const ymd=()=>{ const d=new Date(); return `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`; };
+const DAY=86400e3;
+/* 占位照片（演示用 SVG） */
+const ph=(t,c)=>'data:image/svg+xml;utf8,'+encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="260"><rect width="100%" height="100%" fill="${c}"/><text x="50%" y="48%" fill="#fff" font-size="24" text-anchor="middle" font-family="sans-serif">${t}</text><text x="50%" y="66%" fill="rgba(255,255,255,.75)" font-size="13" text-anchor="middle" font-family="sans-serif">演示占位图</text></svg>`);
+
+const TYPES=['团支部大会','支部委员会','团小组会','团课','团员教育评议','团籍注册','主题团日','推优入党','其他'];
+const STATUSES=['未提交','已提交待审核','已通过','已驳回','逾期'];
+const MATERIAL_OPTS=['会议记录','签到表','现场照片','学习心得','影像资料','其他附件'];
+const SELF_CHECKS=['纪要完整','照片清晰','签到表已签字'];
+const MAT_NAMES=['入团志愿书','入团申请书','团员证','评议登记表','奖惩材料','其他材料'];
+
+/* ================= 演示种子数据 ================= */
+function seed(){
+  const now=Date.now();
+  const dstr=(off,h=18,m=0)=>{ const d=new Date(now+off*DAY);
+    return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(h)}:${p2(m)}`; };
+  const ts=off=>now+off*DAY;
+  const db={
+    ver:1, seq:{task:0,ledger:0,sub:0,archive:0,member:0,notice:0}, remindLog:{},
+    depts:[
+      {id:'D0',name:'XX镇团委'},
+      {id:'D1',name:'机关团支部'},{id:'D2',name:'柳林村团支部'},{id:'D3',name:'河东村团支部'},
+      {id:'D4',name:'镇中学团支部'},{id:'D5',name:'卫生院团支部'},{id:'D6',name:'青年之家团支部'}],
+    users:[
+      {id:'U1',name:'张明远',role:'admin', deptId:'D0',title:'团委书记'},
+      {id:'U2',name:'李雨桐',role:'clerk', deptId:'D0',title:'团委干事'},
+      {id:'U3',name:'王建国',role:'branch',deptId:'D1',title:'支部书记'},
+      {id:'U4',name:'陈秀兰',role:'branch',deptId:'D2',title:'支部书记'},
+      {id:'U5',name:'赵铁柱',role:'branch',deptId:'D3',title:'支部书记'},
+      {id:'U6',name:'孙晓梅',role:'branch',deptId:'D4',title:'支部书记'},
+      {id:'U7',name:'周文斌',role:'branch',deptId:'D5',title:'支部书记'},
+      {id:'U8',name:'吴倩',   role:'branch',deptId:'D6',title:'支部书记'}],
+    tasks:[],ledger:[],submissions:[],archives:[],members:[],notices:[]
+  };
+  const leaderOf=id=>db.users.find(u=>u.role==='branch'&&u.deptId===id).id;
+  const PHOTO_SET=()=>[
+    {name:'活动现场1.jpg',dataURL:ph('活动现场','#3a6fd8')},
+    {name:'活动现场2.jpg',dataURL:ph('集中学习','#2f9e6e')},
+    {name:'集体合影.jpg',dataURL:ph('集体合影','#e0862c')}];
+
+  /* 任务定义：rows = [支部, 状态, 提交时间偏移(天), 驳回意见] */
+  const defs=[
+    {name:'八月主题团日活动：学思想 强党性 建新功',type:'主题团日',deadline:dstr(-25,18,0),priority:'重要',
+     desc:'围绕理论学习开展主题团日，需提交活动纪要、现场照片与学习心得。',checklist:['会议记录','现场照片','学习心得'],
+     rows:[['D1','已通过',-27],['D2','已通过',-27],['D3','已通过',-26],['D4','已通过',-26],['D5','已通过',-26],['D6','已通过',-25]]},
+    {name:'九月支部委员会会议',type:'支部委员会',deadline:dstr(-3,18,0),priority:'普通',
+     desc:'召开支部委员会，研究第三季度团员发展与团费收缴事项。',checklist:['会议记录','签到表'],
+     rows:[['D1','已通过',-4],['D2','已通过',-4],['D3','逾期',null],['D4','已通过',-5],['D5','已通过',-4],['D6','已提交待审核',-0.2]]},
+    {name:'团员教育评议动员部署',type:'团员教育评议',deadline:dstr(9,18,0),priority:'重要',
+     desc:'组织学习评议办法，部署年度团员教育评议工作。',checklist:['会议记录','签到表','影像资料'],
+     rows:[['D1','已通过',-6],['D2','未提交',null],['D3','未提交',null],['D4','已驳回',-4,'签到表未签字，请补签后重新提交。'],['D5','未提交',null],['D6','已通过',-5]]},
+    {name:'十月团课：青年大学习专题',type:'团课',deadline:dstr(1,18,0),priority:'紧急',
+     desc:'集中观看青年大学习专题课程并开展交流研讨。',checklist:['会议记录','签到表','现场照片'],
+     rows:[['D1','未提交',null],['D2','未提交',null],['D3','未提交',null],['D4','未提交',null],['D5','未提交',null],['D6','未提交',null]]},
+    {name:'团员档案规范化自查',type:'其他',deadline:dstr(11,18,0),priority:'普通',
+     desc:'对照档案清单逐人核查材料归档情况，形成自查记录。',checklist:['会议记录','其他附件'],
+     rows:[['D1','未提交',null],['D2','已通过',-10],['D3','未提交',null],['D4','未提交',null],['D5','未提交',null],['D6','未提交',null]]}
+  ];
+  const summaries=['按要求完成集中学习与交流研讨，全体团员参加，现场秩序良好。','会议研究通过了三季度发展团员计划，形成会议决议。','组织观看专题课程并分组讨论，团员提交学习心得12篇。','对照档案清单完成逐人核查，补齐缺失材料3份。'];
+
+  defs.forEach((def,idx)=>{
+    const seqT=++db.seq.task;
+    const code='TASK'+ymd()+p3(seqT);
+    const task={id:'T'+seqT,code,name:def.name,type:def.type,desc:def.desc,checklist:def.checklist,
+      deadline:def.deadline,priority:def.priority,createdAt:ts(-30+idx*4),publisherId:'U1',
+      targets:def.rows.map(r=>({deptId:r[0],leaderId:leaderOf(r[0])}))};
+    db.tasks.push(task);
+    def.rows.forEach((r,i)=>{
+      const [deptId,status,subOff,opinion]=r;
+      const led={id:'L'+p3(++db.seq.ledger),taskId:task.id,taskCode:code,taskName:task.name,taskType:task.type,
+        deadline:task.deadline,deptId,leaderId:leaderOf(deptId),status,
+        submitTime:subOff!=null?ts(subOff):null,remark:''};
+      db.ledger.push(led);
+      if(subOff!=null){
+        const sub={id:'S'+p3(++db.seq.sub),ledgerId:led.id,taskId:task.id,deptId,userId:leaderOf(deptId),
+          activityTime:dstr(subOff,15,0),place:deptId==='D4'?'镇中学会议室':db.depts.find(d=>d.id===deptId).name+'活动室',
+          expected:18+(i*3)%9,actual:16+(i*3)%9,summary:summaries[i%summaries.length],
+          photos:PHOTO_SET(),files:[{name:'签到表扫描件.pdf'}],selfCheck:[...SELF_CHECKS],
+          status:status==='已通过'?'已通过':(status==='已驳回'?'已驳回':'已提交待审核'),
+          reviewerId:'U2',opinion:opinion||'',reviewTime:ts(subOff+1)};
+        db.submissions.push(sub);
+        if(status==='已通过'){
+          db.archives.push({id:'A'+p3(++db.seq.archive),code:'GD'+ymd()+p3(db.seq.archive),mode:'自动归档',
+            sourceTask:task.name,type:task.type,deptId,activityTime:sub.activityTime,
+            year:sub.activityTime.slice(0,4),summary:sub.summary,photos:[...sub.photos],
+            files:[...sub.files],userId:'U2',createdAt:ts(subOff+1)});
+        }
+      }
+    });
+  });
+  /* 手动补录示例 */
+  db.archives.push({id:'A'+p3(++db.seq.archive),code:'GD'+ymd()+p3(db.seq.archive),mode:'手动补录',
+    sourceTask:'七月团课：青年大学习专题',type:'团课',deptId:'D4',activityTime:dstr(-45,15,0),
+    year:dstr(-45,15,0).slice(0,4),summary:'历史材料电子化补录。',photos:[{name:'团课现场.jpg',dataURL:ph('团课现场','#7a5cd6')}],
+    files:[{name:'签到表（历史）.pdf'}],userId:'U6',createdAt:ts(-2)});
+
+  /* 团员档案 12 人 */
+  const memberDefs=[
+    ['刘志强','男','D1','2018-05-04'],['张丽娜','女','D1','2019-06-12'],
+    ['李文博','男','D2','2020-05-06'],['郭艳','女','D2','2021-04-28'],
+    ['陈浩然','男','D3','2019-05-05'],['刘小燕','女','D3','2022-05-04'],
+    ['杨紫涵','女','D4','2023-06-08'],['王俊杰','男','D4','2022-06-10'],['田雨桐','女','D4','2024-06-01'],
+    ['马腾','男','D5','2020-05-09'],['吕欣欣','女','D6','2021-05-11'],['何伟','男','D6','2018-05-04']];
+  memberDefs.forEach((m,i)=>{
+    const archivedCount=[6,5,6,4,6,3,6,6,2,6,5,6][i];
+    db.members.push({id:'M'+p3(++db.seq.member),code:'GY'+ymd()+p3(db.seq.member),name:m[0],gender:m[1],
+      deptId:m[2],joinDate:m[3],leagueStatus:i===11?'毕业转出':'在册',post:i===0?'支部组织委员':'',
+      idcard:'41010'+p2(10+i)+'199901'+p2(1+i%9)+p3(100+i),
+      materials:MAT_NAMES.map((n,j)=>({name:n,
+        archived:j<archivedCount?'已归档':'缺失',loc:j<archivedCount?'档案柜0'+(1+i%3)+'-第'+(j+1)+'排':'',
+        date:j<archivedCount?'2026-0'+(1+(i+j)%8)+'-15':''}))});
+  });
+
+  /* 预置消息 */
+  const T4=defs[3];
+  db.users.filter(u=>u.role==='branch').forEach(u=>{
+    db.notices.push({id:'N'+p3(++db.seq.notice),to:u.id,
+      content:`【新任务】「${T4.name}」已下发，截止 ${fmtT(T4.deadline)}，请及时填报材料。`,time:ts(-1),read:false});
+  });
+  db.notices.push({id:'N'+p3(++db.seq.notice),to:'U5',
+    content:'【逾期预警】您支部「九月支部委员会会议」已逾期未提交，请立即补报。',time:ts(-2),read:false});
+  db.notices.push({id:'N'+p3(++db.seq.notice),to:'U1',
+    content:'【待审核】镇中学团支部已提交「九月支部委员会会议」材料，请及时审核。',time:ts(-0.2),read:false});
+  db.notices.push({id:'N'+p3(++db.seq.notice),to:'U6',
+    content:'【驳回通知】「团员教育评议动员部署」材料被驳回：签到表未签字，请补签后重新提交。',time:ts(-3),read:true});
+  return db;
+}
+
+/* ================= 应用 ================= */
+const {createApp}=Vue;
+const app=createApp({
+  data(){ return {
+    db:null, sessionUid:null, page:'dashboard',
+    types:TYPES, statuses:STATUSES, materialOpts:MATERIAL_OPTS, selfChecks:SELF_CHECKS,
+    /* 筛选 */
+    fStatus:'',fType:'',fDept:'',
+    aYear:'',aType:'',aDept:'',aKw:'',
+    mKw:'',mDept:'',mStatus:'',
+    /* 表单 */
+    taskForm:{name:'',type:'',deadline:'',priority:'普通',desc:'',checklist:[],targets:[],file:''},
+    memberForm:{name:'',gender:'男',deptId:'',joinDate:'',leagueStatus:'在册',post:'',idcard:''},
+    modal:null, toastMsg:'',
+  };},
+  created(){
+    this._charts={};
+    try{ this.db=JSON.parse(localStorage.getItem(DB_KEY)); }catch(e){ this.db=null; }
+    if(!this.db||this.db.ver!==1) this.db=seed();
+    this.sessionUid=localStorage.getItem(SES_KEY)||null;
+  },
+  mounted(){
+    window.addEventListener('resize',()=>Object.values(this._charts).forEach(c=>c&&c.resize()));
+    if(this.currentUser){ this.runEngine(true); this.$nextTick(()=>this.page==='dashboard'&&this.renderCharts()); }
+  },
+  watch:{
+    page(v){ if(v==='dashboard') this.$nextTick(()=>this.renderCharts()); }
+  },
+  computed:{
+    currentUser(){ return this.db? this.db.users.find(u=>u.id===this.sessionUid)||null : null; },
+    roleText(){ return {admin:'团委管理员',clerk:'团委干事',branch:'支部书记'}[this.currentUser.role]; },
+    isLeader(){ return this.currentUser.role!=='branch'; },
+    branches(){ return this.db.depts.filter(d=>d.id!=='D0'); },
+    branchCount(){ return this.branches.length; },
+    myBranchOptions(){ return this.isLeader? this.branches : this.branches.filter(d=>d.id===this.currentUser.deptId); },
+    navItems(){
+      if(!this.isLeader) return [['workbench','支部工作台','F3/D3'],['members','团员档案','F4'],['messages','消息中心','']];
+      return [['dashboard','督办驾驶舱','D1'],['tasks','任务下发','F1'],['ledger','督办台账','F2'],
+        ['review','材料审核','F3'],['archive','档案检索','F5'],['members','团员档案','F4'],
+        ['report','检查报表',''],['messages','消息中心','']];
+    },
+    pageTitle(){ const m=Object.fromEntries(this.navItems.map(n=>[n[0],n[1]])); return m[this.page]||'团档智督'; },
+    pageTag(){ const m=Object.fromEntries(this.navItems.map(n=>[n[0],n[2]])); return m[this.page]||''; },
+    nowText(){ return fmtT(Date.now()); },
+    /* ---------- 统计 ---------- */
+    kpis(){
+      const L=this.db.ledger, total=L.length;
+      const done=L.filter(e=>e.status==='已提交待审核'||e.status==='已通过').length;
+      return { taskTotal:this.db.tasks.length, total, done,
+        ratePct: total? Math.round(100*done/total):0,
+        overdue:L.filter(e=>e.status==='逾期').length,
+        pending:L.filter(e=>e.status==='已提交待审核').length };
+    },
+    deptStats(){
+      return this.branches.map(d=>{
+        const rows=this.db.ledger.filter(e=>e.deptId===d.id);
+        const done=rows.filter(e=>e.status==='已提交待审核'||e.status==='已通过').length;
+        return {name:d.name,total:rows.length,done,ratePct:rows.length?Math.round(100*done/rows.length):0};
+      });
+    },
+    typeStats(){
+      const m={}; this.db.tasks.forEach(t=>m[t.type]=(m[t.type]||0)+1);
+      return Object.entries(m).map(([name,value])=>({name,value}));
+    },
+    weekTrend(){
+      const labels=[],data=[]; const now=new Date();
+      const mon=d=>{ const x=new Date(d); const w=(x.getDay()+6)%7; x.setDate(x.getDate()-w); x.setHours(0,0,0,0); return x; };
+      for(let i=5;i>=0;i--){
+        const s=mon(now.getTime()-i*7*DAY), e=s.getTime()+7*DAY;
+        labels.push(`${p2(s.getMonth()+1)}/${p2(s.getDate())}周`);
+        data.push(this.db.submissions.filter(x=>x.submitTime>=s.getTime()&&x.submitTime<e).length);
+      }
+      return {labels,data};
+    },
+    warnList(){
+      return this.db.ledger.filter(e=>e.status==='逾期'||e.status==='未提交'||e.status==='已驳回')
+        .filter(e=>e.status==='逾期'||this.daysLeft(e.deadline)<=3)
+        .sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+    },
+    /* ---------- 台账 ---------- */
+    ledgerFiltered(){
+      return this.db.ledger.filter(e=>
+        (!this.fStatus||e.status===this.fStatus)&&(!this.fType||e.taskType===this.fType)&&(!this.fDept||e.deptId===this.fDept));
+    },
+    /* ---------- 支部端 ---------- */
+    myLedger(){
+      return this.db.ledger.filter(e=>e.deptId===this.currentUser.deptId)
+        .sort((a,b)=>new Date(b.deadline)-new Date(a.deadline));
+    },
+    myStats(){
+      const L=this.myLedger, total=L.length;
+      const done=L.filter(e=>e.status==='已提交待审核'||e.status==='已通过').length;
+      return {total,done,ratePct:total?Math.round(100*done/total):0,
+        overdue:L.filter(e=>e.status==='逾期').length};
+    },
+    myNotices(){ return this.db.notices.filter(n=>n.to===this.currentUser.id)
+      .sort((a,b)=>b.time-a.time); },
+    unreadCount(){ return this.myNotices.filter(n=>!n.read).length; },
+    /* ---------- 审核 ---------- */
+    pendingSubs(){ return this.db.submissions.filter(s=>s.status==='已提交待审核')
+      .sort((a,b)=>b.submitTime-a.submitTime); },
+    reviewedSubs(){ return this.db.submissions.filter(s=>s.status==='已通过'||s.status==='已驳回')
+      .sort((a,b)=>b.submitTime-a.submitTime); },
+    /* ---------- 归档 ---------- */
+    archiveYears(){ return [...new Set(this.db.archives.map(a=>a.year))].sort().reverse(); },
+    archiveFiltered(){
+      const kw=this.aKw.trim();
+      return this.db.archives.filter(a=>
+        (!this.aYear||a.year===this.aYear)&&(!this.aType||a.type===this.aType)&&(!this.aDept||a.deptId===this.aDept)&&
+        (!kw||a.sourceTask.includes(kw)||a.summary.includes(kw)));
+    },
+    /* ---------- 团员 ---------- */
+    memberFiltered(){
+      const kw=this.mKw.trim();
+      return this.db.members.filter(m=>
+        (!this.mDept||m.deptId===this.mDept)&&(!this.mStatus||m.leagueStatus===this.mStatus)&&
+        (!kw||m.name.includes(kw)||m.code.includes(kw)));
+    },
+    /* ---------- 报表 ---------- */
+    reportRows(){ return this.deptStats.map(s=>{
+      const rows=this.db.ledger.filter(e=>e.deptId===this.branches.find(b=>b.name===s.name).id);
+      return { name:s.name,total:s.total,ratePct:s.ratePct,
+        passed:rows.filter(e=>e.status==='已通过').length,
+        pending:rows.filter(e=>e.status==='已提交待审核').length,
+        rejected:rows.filter(e=>e.status==='已驳回').length,
+        overdue:rows.filter(e=>e.status==='逾期').length,
+        unsub:rows.filter(e=>e.status==='未提交').length }; }); },
+    /* ---------- 填报 ---------- */
+    canSubmit(){
+      if(!this.modal||this.modal.type!=='submit') return false;
+      const s=this.modal.sub;
+      return s.activityTime&&s.place&&s.summary&&s.photos.length>0&&s.files.length>0&&s.selfCheck.length===3;
+    },
+  },
+  methods:{
+    /* ---------- 通用 ---------- */
+    save(){ try{ localStorage.setItem(DB_KEY,JSON.stringify(this.db)); }
+      catch(e){ this.toast('数据量较大：照片仅在本次会话内保留，其余数据已保存'); } },
+    toast(m){ this.toastMsg=m; clearTimeout(this._tt); this._tt=setTimeout(()=>this.toastMsg='',2600); },
+    go(p){ this.page=p; },
+    toggle(arr,v){ const i=arr.indexOf(v); i>=0?arr.splice(i,1):arr.push(v); },
+    toggleCheck(c){ this.toggle(this.modal.sub.selfCheck,c); },
+    usersOf(r){ return this.db.users.filter(u=>u.role===r); },
+    deptName(id){ const d=this.db.depts.find(x=>x.id===id); return d?d.name:id; },
+    userName(id){ const u=this.db.users.find(x=>x.id===id); return u?u.name:id; },
+    maskId(s){ return s? s.slice(0,4)+'**********'+s.slice(-4):'-'; },
+    fmt(t){ return fmtT(t); },
+    daysLeft(dl){ return Math.ceil((new Date(dl).getTime()-Date.now())/DAY); },
+    nearText(e){ if(e.status!=='未提交'&&e.status!=='已驳回') return '';
+      const d=this.daysLeft(e.deadline);
+      if(d<0) return ''; if(d<=3) return d===0?'今日截止':'剩'+d+'天'; return ''; },
+    rowCls(e){ if(e.status==='逾期') return 'row-red';
+      if((e.status==='未提交'||e.status==='已驳回')&&this.daysLeft(e.deadline)>=0&&this.daysLeft(e.deadline)<=3) return 'row-yellow';
+      return ''; },
+    stClass(s){ return {'未提交':'b-gray','已提交待审核':'b-blue','已通过':'b-green','已驳回':'b-orange','逾期':'b-red'}[s]||'b-gray'; },
+    notify(to,content){ this.db.notices.push({id:'N'+p3(++this.db.seq.notice)+(Date.now()%1000),
+      to,content,time:Date.now(),read:false}); },
+    notifyAdmins(content){ this.db.users.filter(u=>u.role!=='branch').forEach(u=>this.notify(u.id,content)); },
+    /* ---------- 登录 ---------- */
+    login(id){ this.sessionUid=id; localStorage.setItem(SES_KEY,id);
+      this.page=this.db.users.find(u=>u.id===id).role==='branch'?'workbench':'dashboard';
+      this.runEngine(true); this.toast('登录成功，欢迎 '+this.userName(id)); },
+    logout(){ this.sessionUid=null; localStorage.removeItem(SES_KEY); },
+    resetDemo(){ localStorage.removeItem(DB_KEY); localStorage.removeItem(SES_KEY); location.reload(); },
+    /* ---------- 督办引擎 S1/S2 ---------- */
+    runEngine(silent){
+      let acts=0;
+      this.db.ledger.forEach(e=>{
+        if(e.status==='未提交'||e.status==='已驳回'){
+          const dl=new Date(e.deadline).getTime();
+          if(Date.now()>dl){
+            e.status='逾期'; acts++;
+            this.notify(e.leaderId,`【逾期预警】您支部「${e.taskName}」已逾期未提交，请立即补报。`);
+            this.notifyAdmins(`【逾期预警】${this.deptName(e.deptId)}「${e.taskName}」已逾期，请在驾驶舱跟进。`);
+          }else if(dl-Date.now()<=3*DAY){
+            const key=e.id+'_'+new Date().toDateString();
+            if(!this.db.remindLog[key]){ this.db.remindLog[key]=1; acts++;
+              this.notify(e.leaderId,`【截止提醒】您支部「${e.taskName}」将于 ${fmtT(e.deadline)} 截止，请尽快填报材料。`); }
+          }
+        }
+      });
+      if(acts){ this.save(); if(!silent) this.toast(`督办引擎执行完成：${acts} 条提醒/预警（S1/S2）`);
+        if(this.page==='dashboard') this.renderCharts(); }
+      else if(!silent) this.toast('督办引擎执行完成：当前无临期/逾期事项');
+    },
+    /* ---------- F1 任务下发 ---------- */
+    createTask(){
+      const f=this.taskForm;
+      if(!f.name||!f.type||!f.deadline||!f.desc){ this.toast('请填写任务名称、类型、截止时间与要求说明'); return; }
+      if(!f.targets.length){ this.toast('请至少选择一个目标支部'); return; }
+      const seqT=++this.db.seq.task;
+      const code='TASK'+ymd()+p3(seqT);
+      this.db.tasks.push({id:'T'+seqT,code,name:f.name,type:f.type,desc:f.desc,checklist:[...f.checklist],
+        deadline:f.deadline,priority:f.priority,createdAt:Date.now(),publisherId:this.currentUser.id,
+        targets:f.targets.map(did=>({deptId:did,leaderId:this.db.users.find(u=>u.role==='branch'&&u.deptId===did).id}))});
+      f.targets.forEach(did=>{
+        const leader=this.db.users.find(u=>u.role==='branch'&&u.deptId===did);
+        this.db.ledger.push({id:'L'+p3(++this.db.seq.ledger)+'_'+seqT,taskId:'T'+seqT,taskCode:code,
+          taskName:f.name,taskType:f.type,deadline:f.deadline,deptId:did,leaderId:leader.id,
+          status:'未提交',submitTime:null,remark:''});
+        this.notify(leader.id,`【新任务】「${f.name}」已下发，截止 ${fmtT(f.deadline)}，请及时填报材料。`);
+      });
+      this.notifyAdmins(`【任务下发】「${f.name}」已下发至 ${f.targets.length} 个支部。`);
+      this.taskForm={name:'',type:'',deadline:'',priority:'普通',desc:'',checklist:[],targets:[],file:''};
+      this.save(); this.toast('任务已发布，督办台账已同步生成（F1 → F2 联动）');
+    },
+    taskProg(taskId){
+      const rows=this.db.ledger.filter(e=>e.taskId===taskId);
+      const done=rows.filter(e=>e.status==='已提交待审核'||e.status==='已通过').length;
+      return {done,total:rows.length,pct:rows.length?Math.round(100*done/rows.length):0};
+    },
+    /* ---------- F3 填报 ---------- */
+    findSub(ledgerId){ return this.db.submissions.find(s=>s.ledgerId===ledgerId); },
+    subTaskName(s){ const e=this.db.ledger.find(x=>x.id===s.ledgerId); return e?e.taskName:s.taskId; },
+    subLedgerStatus(s){ const e=this.db.ledger.find(x=>x.id===s.ledgerId); return e?e.status:'-'; },
+    openSubmit(e){
+      const prev=this.db.submissions.find(s=>s.ledgerId===e.id&&s.status==='已驳回');
+      this.modal={type:'submit',e,sub:prev?{
+        ...prev,status:'已提交待审核',selfCheck:[...prev.selfCheck],photos:[...prev.photos],files:[...prev.files],opinion:''}:{
+        ledgerId:e.id,taskId:e.taskId,deptId:this.currentUser.deptId,userId:this.currentUser.id,
+        activityTime:'',place:'',expected:null,actual:null,summary:'',photos:[],files:[],
+        selfCheck:[],status:'已提交待审核',reviewerId:'',opinion:'',reviewTime:null,submitTime:null}};
+    },
+    onPics(ev){ this.addFiles(ev.target.files,this.modal.sub.photos,true); ev.target.value=''; },
+    onSign(ev){ this.addFiles(ev.target.files,this.modal.sub.files,false); ev.target.value=''; },
+    addFiles(list,arr,isImg){
+      [...list].forEach(f=>{
+        if(f.size>2*1024*1024){ arr.push({name:f.name}); return; }
+        const r=new FileReader();
+        r.onload=()=>{ arr.push({name:f.name,dataURL:r.result}); };
+        r.readAsDataURL(f);
+      });
+    },
+    doSubmit(){
+      const m=this.modal, e=m.e, s=m.sub, now=Date.now();
+      const exist=this.db.submissions.findIndex(x=>x.id===(s.id||''));
+      s.submitTime=now;
+      if(exist>=0) this.db.submissions[exist]=s; else this.db.submissions.push(s);
+      e.status='已提交待审核'; e.submitTime=now;
+      this.notifyAdmins(`【待审核】${this.deptName(e.deptId)} 已提交「${e.taskName}」材料，请及时审核。`);
+      this.notify(e.leaderId,`【提交成功】「${e.taskName}」材料已提交，等待团委审核。`);
+      this.modal=null; this.save(); this.toast('提交成功：台账已联动更新为「已提交待审核」（S3a）');
+    },
+    /* ---------- F3 审核 ---------- */
+    openReview(sub){ this.modal={type:'review',sub,opinion:''}; },
+    doReview(pass){
+      const m=this.modal, s=m.sub, now=Date.now();
+      if(!pass&&!m.opinion.trim()){ this.toast('驳回时请填写审核意见'); return; }
+      s.status=pass?'已通过':'已驳回'; s.opinion=m.opinion.trim(); s.reviewerId=this.currentUser.id; s.reviewTime=now;
+      const e=this.db.ledger.find(x=>x.id===s.ledgerId);
+      if(e){ e.status=s.status; }
+      if(pass){
+        const code='GD'+ymd()+p3(++this.db.seq.archive);
+        this.db.archives.push({id:'A'+p3(this.db.seq.archive),code,mode:'自动归档',
+          sourceTask:e?e.taskName:'',type:e?e.taskType:'',deptId:s.deptId,activityTime:s.activityTime,
+          year:String(s.activityTime).slice(0,4),summary:s.summary,photos:[...s.photos],files:[...s.files],
+          userId:this.currentUser.id,createdAt:now});
+        this.notify(s.userId,`【审核通过】「${this.subTaskName(s)}」材料审核通过，已自动归档（编号 ${code}）。`);
+        this.toast('审核通过：材料已自动写入归档库（S3b）');
+      }else{
+        this.notify(s.userId,`【驳回通知】「${this.subTaskName(s)}」材料被驳回：${s.opinion}，请修改后重新提交。`);
+        this.toast('已驳回：台账状态联动更新（S4）');
+      }
+      this.modal=null; this.save();
+    },
+    viewSub(sub){ this.modal={type:'subDetail',sub}; },
+    /* ---------- F5 归档 ---------- */
+    openArchive(a){ this.modal={type:'archive',a}; },
+    /* ---------- F4 团员 ---------- */
+    matRate(m){ if(!m.materials.length) return 0;
+      return Math.round(100*m.materials.filter(x=>x.archived==='已归档').length/m.materials.length); },
+    openMember(m){ this.modal={type:'member',m}; },
+    openMemberAdd(){ this.memberForm={name:'',gender:'男',deptId:this.myBranchOptions[0]?this.myBranchOptions[0].id:'',
+      joinDate:'',leagueStatus:'在册',post:'',idcard:''}; this.modal={type:'memberAdd'}; },
+    doMemberAdd(){
+      const f=this.memberForm;
+      if(!f.name){ this.toast('请填写姓名'); return; }
+      const n=++this.db.seq.member;
+      this.db.members.push({id:'M'+p3(n),code:'GY'+ymd()+p3(n),name:f.name,gender:f.gender,
+        deptId:f.deptId||this.currentUser.deptId,joinDate:f.joinDate||'-',leagueStatus:f.leagueStatus,
+        post:f.post,idcard:f.idcard,
+        materials:MAT_NAMES.map(name=>({name,archived:'缺失',loc:'',date:''}))});
+      this.modal=null; this.save(); this.toast('团员档案已建立，材料清单初始化为待归档');
+    },
+    /* ---------- 报表 ---------- */
+    printReport(){ window.print(); },
+    exportCSV(){
+      const head=['台账编号','任务编号','任务名称','任务类型','责任支部','负责人','截止时间','督办状态','提交时间'];
+      const rows=this.db.ledger.map(e=>[e.id,e.taskCode,e.taskName,e.taskType,this.deptName(e.deptId),
+        this.userName(e.leaderId),fmtT(e.deadline),e.status,fmtT(e.submitTime)]);
+      const csv='\ufeff'+[head,...rows].map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+      a.download='团档智督-督办台账'+ymd()+'.csv'; a.click();
+      this.toast('台账明细已导出 CSV');
+    },
+    /* ---------- 消息 ---------- */
+    markAllRead(){ this.db.notices.forEach(n=>{ if(n.to===this.currentUser.id) n.read=true; }); this.save(); },
+    closeModal(){ this.modal=null; },
+    /* ---------- 图表 ---------- */
+    renderCharts(){
+      if(!window.echarts) return;
+      const mk=(ref,opt)=>{ const el=this.$refs[ref]; if(!el) return;
+        let c=this._charts[ref];
+        if(c&&c.getDom()!==el){ c.dispose(); c=null; }
+        if(!c) c=this._charts[ref]=echarts.init(el);
+        c.setOption(opt,true); c.resize(); };
+      const COLORS=['#2b6de8','#22b07d','#f0a020','#e05656','#8a6ff0','#13b2a4','#4a7df0'];
+      mk('barChart',{
+        tooltip:{trigger:'axis'}, grid:{left:40,right:16,top:36,bottom:28},
+        legend:{data:['完成率','逾期数'],top:0},
+        xAxis:{type:'category',data:this.deptStats.map(s=>s.name.replace('团支部',''))},
+        yAxis:[{type:'value',max:100,axisLabel:{formatter:'{value}%'}},{type:'value',name:'件',minInterval:1}],
+        series:[
+          {name:'完成率',type:'bar',barWidth:26,itemStyle:{borderRadius:[6,6,0,0],color:'#2b6de8'},
+           label:{show:true,position:'top',formatter:'{c}%'},data:this.deptStats.map(s=>s.ratePct)},
+          {name:'逾期数',type:'line',yAxisIndex:1,symbolSize:8,itemStyle:{color:'#e05656'},
+           data:this.deptStats.map(s=>this.db.ledger.filter(e=>e.deptId===this.branches.find(b=>b.name===s.name).id&&e.status==='逾期').length)}
+        ]});
+      mk('pieChart',{
+        tooltip:{trigger:'item'}, color:COLORS,
+        legend:{bottom:0,type:'scroll'},
+        series:[{type:'pie',radius:['42%','68%'],center:['50%','44%'],
+          label:{formatter:'{b}\n{c} 项'},data:this.typeStats}]});
+      mk('lineChart',{
+        tooltip:{trigger:'axis'}, grid:{left:40,right:20,top:20,bottom:28},
+        xAxis:{type:'category',data:this.weekTrend.labels},
+        yAxis:{type:'value',minInterval:1},
+        series:[{name:'提交数',type:'line',smooth:true,data:this.weekTrend.data,symbolSize:9,
+          areaStyle:{opacity:.15},itemStyle:{color:'#22b07d'},lineStyle:{width:3}}]});
+    },
+  },
+});
+app.mount('#app');
+</script>
+</body>
+</html>
